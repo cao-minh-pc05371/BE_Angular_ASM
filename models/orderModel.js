@@ -29,4 +29,11 @@ const Order = connection.define('Order', {
   timestamps: true
 });
 
+const User = require('./usersModel');
+const Address = require('./addressModel');
+
+Order.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Order.belongsTo(Address, { foreignKey: 'address_id', as: 'address' });
+
+
 module.exports = Order;

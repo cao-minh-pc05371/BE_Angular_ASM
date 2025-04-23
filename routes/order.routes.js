@@ -18,6 +18,9 @@ router.post('/order/add', checkJWT, OrderController.create);
 //Admin cập nhật trạng thái đơn hàng
 router.put('/order/:id', checkJWT, isAdmin, OrderController.update);
 
+// Cập nhật trạng thái đơn hàng sang "shipped" (admin)
+router.patch('/order/:id/mark-shipped', checkJWT, isAdmin, OrderController.markAsShipped);
+
 //Admin xóa đơn hàng
 router.delete('/order/:id', checkJWT, isAdmin, OrderController.delete);
 

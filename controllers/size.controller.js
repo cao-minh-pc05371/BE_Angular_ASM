@@ -1,7 +1,7 @@
 const SizeModel = require('../models/sizeModel');
 
 class SizeController {
-    
+
     // Lấy danh sách tất cả size sản phẩm
     static async get(req, res) {
         try {
@@ -38,13 +38,28 @@ class SizeController {
     // Tạo size sản phẩm mới
     static async create(req, res) {
         try {
+            const { size_label } = req.body;
+
+            // 🔍 Kiểm tra size đã tồn tại chưa
+            const existing = await SizeModel.findOne({
+                where: { size_label }
+            });
+
+            if (existing) {
+                return res.status(400).json({
+                    message: "Kích thước này đã tồn tại."
+                });
+            }
+
+            // ✅ Nếu chưa tồn tại thì tạo mới
             const newSize = await SizeModel.create(req.body);
-            res.status(201).json({
-                message: "Tạo size sản phẩm mới thành công",
+            return res.status(201).json({
+                message: "✅ Tạo size sản phẩm mới thành công",
                 size: newSize
             });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error("Lỗi tạo size:", error);
+            return res.status(500).json({ error: error.message });
         }
     }
 

@@ -3,19 +3,19 @@ const router = express.Router();
 const PaymentController = require('../controllers/payment.controller');
 const { checkJWT, isAdmin } = require('../middleware/authCheck');
 
-//Admin xem toàn bộ thanh toán
+// Lấy toàn bộ thanh toán (admin)
 router.get('/payment/list', checkJWT, isAdmin, PaymentController.get);
 
-//Người dùng xem thanh toán của đơn hàng của họ (có kiểm tra trong controller)
+// Lấy thanh toán theo đơn hàng (admin hoặc chủ đơn)
 router.get('/payment/order/:order_id', checkJWT, PaymentController.getByOrder);
 
-//Người dùng tạo thanh toán sau khi đặt hàng (COD hoặc Momo)
+// Tạo thanh toán mới (người dùng)
 router.post('/payment/add', checkJWT, PaymentController.add);
 
-//Admin cập nhật trạng thái thanh toán
+// Cập nhật trạng thái thanh toán (admin)
 router.put('/payment/:id', checkJWT, isAdmin, PaymentController.update);
 
-//Admin có thể xoá thanh toán nếu cần
+// Xóa thanh toán (admin)
 router.delete('/payment/:id', checkJWT, isAdmin, PaymentController.delete);
 
 module.exports = router;

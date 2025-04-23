@@ -1,11 +1,27 @@
 const OrderDetailModel = require('../models/orderDetailModel');
+const OrderModel = require('../models/orderModel');
+const VariantModel = require('../models/productVariantsModel');
+const SizeModel = require('../models/sizeModel');
+const ColorModel = require('../models/colorModel');
+const ProductModel = require('../models/productsModel');
 
 class OrderDetailController {
-
   // Lấy tất cả chi tiết đơn hàng
   static async get(req, res) {
     try {
-      const details = await OrderDetailModel.findAll();
+      const details = await OrderDetailModel.findAll({
+        include: [
+          {
+            model: VariantModel,
+            as: 'variant',
+            include: [
+              { model: ProductModel, as: 'product', attributes: ['id', 'name', 'image'] },
+              { model: SizeModel, as: 'size', attributes: ['id', 'size_label'] },
+              { model: ColorModel, as: 'color', attributes: ['id', 'color_name', 'color_code'] }
+            ]
+          }
+        ]
+      });
       res.status(200).json({
         message: 'Lấy danh sách chi tiết đơn hàng thành công',
         data: details
@@ -15,23 +31,34 @@ class OrderDetailController {
     }
   }
 
-  // Lấy danh sách chi tiết đơn hàng theo order_id (chỉ admin hoặc chủ đơn hàng được phép)
+  // Lấy chi tiết đơn hàng theo order_id
   static async getByOrder(req, res) {
     try {
-      const { id } = req.params; // id = order_id
+      const { id } = req.params;
 
-      // Lấy thông tin đơn hàng để kiểm tra chủ sở hữu
       const order = await OrderModel.findByPk(id);
       if (!order) {
         return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
       }
 
-      // Kiểm tra quyền: chỉ chủ đơn hoặc admin mới được xem
-      if (req.user.id !== order.user_id && req.user.role !== 'Admin') {
+      if (req.user.id !== order.user_id && req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Bạn không có quyền xem đơn hàng này' });
       }
 
-      const details = await OrderDetailModel.findAll({ where: { order_id: id } });
+      const details = await OrderDetailModel.findAll({
+        where: { order_id: id },
+        include: [
+          {
+            model: VariantModel,
+            as: 'variant',
+            include: [
+              { model: ProductModel, as: 'product', attributes: ['id', 'name', 'image'] },
+              { model: SizeModel, as: 'size', attributes: ['id', 'size_label'] },
+              { model: ColorModel, as: 'color', attributes: ['id', 'color_name', 'color_code'] }
+            ]
+          }
+        ]
+      });
 
       res.status(200).json({
         message: 'Lấy chi tiết đơn hàng thành công',

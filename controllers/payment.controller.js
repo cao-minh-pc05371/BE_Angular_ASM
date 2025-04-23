@@ -3,10 +3,12 @@ const OrderModel = require('../models/orderModel');
 
 class PaymentController {
 
-    // Lấy tất cả giao dịch
+    // Lấy danh sách tất cả giao dịch (chỉ admin)
     static async get(req, res) {
         try {
-            const payments = await PaymentModel.findAll();
+            const payments = await PaymentModel.findAll({
+                include: [{ model: OrderModel, as: 'order' }]
+            });
             res.status(200).json({
                 message: 'Lấy danh sách thanh toán thành công',
                 data: payments
@@ -16,28 +18,23 @@ class PaymentController {
         }
     }
 
-
-    // Lấy theo order_id
+    // Lấy thanh toán theo order_id (chỉ admin hoặc chủ đơn hàng)
     static async getByOrder(req, res) {
         try {
             const { order_id } = req.params;
 
-            // Lấy đơn hàng để kiểm tra chủ sở hữu
             const order = await OrderModel.findByPk(order_id);
             if (!order) {
                 return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
             }
 
-            // Kiểm tra quyền truy cập
-            if (req.user.id !== order.user_id && req.user.role !== 'Admin') {
-                return res.status(403).json({ message: 'Bạn không có quyền xem thanh toán của đơn hàng này' });
+            if (req.user.id !== order.user_id && req.user.role !== 'admin') {
+                return res.status(403).json({ message: 'Bạn không có quyền xem thanh toán đơn hàng này' });
             }
 
-            // Nếu hợp lệ thì lấy thanh toán
             const payment = await PaymentModel.findOne({ where: { order_id } });
-
             if (!payment) {
-                return res.status(404).json({ message: 'Không tìm thấy thanh toán cho đơn hàng này' });
+                return res.status(404).json({ message: 'Không tìm thấy thông tin thanh toán' });
             }
 
             res.status(200).json({ data: payment });
@@ -46,11 +43,20 @@ class PaymentController {
         }
     }
 
-
-    // Thêm thanh toán mới
+    // Tạo thanh toán mới
     static async add(req, res) {
         try {
             const { order_id, amount, payment_method, status } = req.body;
+
+            const order = await OrderModel.findByPk(order_id);
+            if (!order) {
+                return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
+            }
+
+            const existing = await PaymentModel.findOne({ where: { order_id } });
+            if (existing) {
+                return res.status(400).json({ message: 'Đơn hàng đã có thanh toán' });
+            }
 
             const newPayment = await PaymentModel.create({
                 order_id,
@@ -60,7 +66,7 @@ class PaymentController {
             });
 
             res.status(201).json({
-                message: 'Thêm thanh toán thành công',
+                message: 'Tạo thanh toán thành công',
                 payment: newPayment
             });
         } catch (error) {
@@ -68,12 +74,11 @@ class PaymentController {
         }
     }
 
-    // Cập nhật trạng thái thanh toán
+    // Cập nhật thanh toán
     static async update(req, res) {
         try {
             const { id } = req.params;
             const payment = await PaymentModel.findByPk(id);
-
             if (!payment) {
                 return res.status(404).json({ message: 'Không tìm thấy thanh toán' });
             }
@@ -93,7 +98,6 @@ class PaymentController {
         try {
             const { id } = req.params;
             const payment = await PaymentModel.findByPk(id);
-
             if (!payment) {
                 return res.status(404).json({ message: 'Không tìm thấy thanh toán' });
             }

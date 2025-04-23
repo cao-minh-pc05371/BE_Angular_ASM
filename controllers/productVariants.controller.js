@@ -1,7 +1,9 @@
 const VariantModel = require('../models/productVariantsModel');
+const SizeModel = require('../models/sizeModel');
+const ColorModel = require('../models/colorModel');
 
 class ProductVariantController {
-  
+
   // Lấy tất cả biến thể
   static async get(req, res) {
     try {
@@ -33,7 +35,22 @@ class ProductVariantController {
   static async getByProduct(req, res) {
     try {
       const { id } = req.params;
-      const variants = await VariantModel.findAll({ where: { product_id: id } });
+
+      const variants = await VariantModel.findAll({
+        where: { product_id: id },
+        include: [
+          {
+            model: SizeModel,
+            as: 'size',
+            attributes: ['id', 'size_label']
+          },
+          {
+            model: ColorModel,
+            as: 'color',
+            attributes: ['id', 'color_name', 'color_code']
+          }
+        ]
+      });
 
       res.status(200).json({
         message: 'Lấy biến thể theo sản phẩm thành công',
@@ -49,6 +66,16 @@ class ProductVariantController {
     try {
       const { product_id, size_id, color_id, stock } = req.body;
 
+      const existingVariant = await VariantModel.findOne({
+        where: { product_id, size_id, color_id }
+      });
+
+      if (existingVariant) {
+        return res.status(400).json({
+          message: 'Biến thể với kích thước và màu sắc này đã tồn tại.'
+        });
+      }
+
       const newVariant = await VariantModel.create({
         product_id,
         size_id,
@@ -56,12 +83,14 @@ class ProductVariantController {
         stock
       });
 
-      res.status(201).json({
-        message: 'Tạo biến thể thành công',
+      return res.status(201).json({
+        message: '✅ Tạo biến thể mới thành công',
         variant: newVariant
       });
+
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Lỗi khi thêm biến thể:", error);
+      return res.status(500).json({ error: error.message });
     }
   }
 
