@@ -30,7 +30,7 @@ const Payment = connection.define('Payment', {
     allowNull: true
   }
 }, {
-  tableName: 'payments',
+  tableName: 'payment',
   timestamps: true // để dùng createdAt và updatedAt
 });
 
